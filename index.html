@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Mic Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+  <button id="testMic" style="font-size:2em;margin-top:30vh;">Test Microphone</button>
+  <div id="result" style="margin-top:3em;font-size:1.5em;"></div>
+  <script>
+    document.getElementById('testMic').onclick = async function() {
+      let r = document.getElementById('result');
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        r.innerHTML = '<span style="color:#3bff70;">Mic access works! 🎤</span>';
+      } catch (e) {
+        r.innerHTML = '<span style="color:#ff5577;">Mic access failed: <br>' + e.name + '<br>' + e.message + '</span>';
+      }
+    };
+  </script>
+</body>
+</html>
