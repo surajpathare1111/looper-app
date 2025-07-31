@@ -5,20 +5,51 @@
   <title>Looper Pedal Board (Mobile Version)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* In-line CSS for quick demo, move to styles.css in production */
+    .launch-browser {
+      text-align: center;
+      margin: 18px auto 10px auto;
+    }
+    .launch-browser a {
+      background: linear-gradient(90deg, #22ffe8, #265cff);
+      color: #101a24;
+      padding: 13px 27px;
+      font-size: 1.1em;
+      font-weight: bold;
+      border-radius: 12px;
+      text-decoration: none;
+      box-shadow: 0 4px 12px #0008;
+      transition: transform 0.15s, filter 0.15s;
+      display: inline-block;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+    .launch-browser a:hover {
+      transform: scale(1.07);
+      filter: brightness(1.11);
+      color: #181a1f;
+    }
+    .info-browser {
+      text-align: center;
+      color: #dbeafe;
+      font-size: 0.99em;
+      margin-bottom: 5px;
+      margin-top: 2px;
+      opacity: 0.93;
+      letter-spacing: 0.1px;
+    }
+  </style>
 </head>
 <body>
-  <!-- Start/permission/user message (JS will show/hide as needed) -->
   <div id="startMsg" style="display:none;"></div>
 
-  <!-- Header/BPM -->
   <div class="header">
     <h1>Looper Pedal Board</h1>
     <span id="bpmLabel">BPM: --</span>
   </div>
 
-  <!-- Pedal Board with 4 Loopers -->
   <div class="pedal-board">
-    <!-- Looper 1: Master -->
     <div class="looper-pedal" id="looper1">
       <div class="track-label">MASTER</div>
       <svg class="progress-ring" width="92" height="92">
@@ -30,7 +61,6 @@
       <button class="stop-btn" id="stopBtn1">Stop/Clear</button>
     </div>
 
-    <!-- Looper 2 -->
     <div class="looper-pedal" id="looper2">
       <div class="track-label">TRACK 2</div>
       <svg class="progress-ring" width="92" height="92">
@@ -49,7 +79,6 @@
       <button class="stop-btn" id="stopBtn2">Stop/Clear</button>
     </div>
 
-    <!-- Looper 3 -->
     <div class="looper-pedal" id="looper3">
       <div class="track-label">TRACK 3</div>
       <svg class="progress-ring" width="92" height="92">
@@ -68,7 +97,6 @@
       <button class="stop-btn" id="stopBtn3">Stop/Clear</button>
     </div>
 
-    <!-- Looper 4 -->
     <div class="looper-pedal" id="looper4">
       <div class="track-label">TRACK 4</div>
       <svg class="progress-ring" width="92" height="92">
@@ -88,7 +116,6 @@
     </div>
   </div>
 
-  <!-- FX Section: Reverb and Delay -->
   <div class="fx-section">
     <div class="fx-pedal reverb-pedal">
       <div class="fx-label">REVERB</div>
@@ -99,6 +126,12 @@
         <span id="reverbValue">0%</span>
       </div>
     </div>
+
+    <!-- Live MIC Monitor Toggle Button -->
+    <div class="monitor-toggle">
+      <button id="monitorBtn" class="monitor-btn">Live MIC OFF</button>
+    </div>
+
     <div class="fx-pedal delay-pedal">
       <div class="fx-label">DELAY</div>
       <div class="knob-container">
@@ -110,7 +143,16 @@
     </div>
   </div>
 
-  <!-- Your looper JS file (must be in www folder) -->
+  <!-- Browser Fallback Button -->
+  <div class="info-browser">
+    If your mobile app can't access mic or sound, open the full app in your browser:
+  </div>
+  <div class="launch-browser">
+    <a href="https://surajpathare1111.github.io/looper-app/" target="_blank">
+      🌐 Open Full Looper App in Browser (GitHub)
+    </a>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
