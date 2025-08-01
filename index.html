@@ -5,70 +5,48 @@
   <title>Looper Pedal Board (Mobile Version)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="styles.css" />
-  <style>
-    /* In-line CSS for quick demo, move to styles.css in production */
-    .launch-browser {
-      text-align: center;
-      margin: 18px auto 10px auto;
-    }
-    .launch-browser a {
-      background: linear-gradient(90deg, #22ffe8, #265cff);
-      color: #101a24;
-      padding: 13px 27px;
-      font-size: 1.1em;
-      font-weight: bold;
-      border-radius: 12px;
-      text-decoration: none;
-      box-shadow: 0 4px 12px #0008;
-      transition: transform 0.15s, filter 0.15s;
-      display: inline-block;
-      letter-spacing: 0.5px;
-      margin-top: 2px;
-    }
-    .launch-browser a:hover {
-      transform: scale(1.07);
-      filter: brightness(1.11);
-      color: #181a1f;
-    }
-    .info-browser {
-      text-align: center;
-      color: #dbeafe;
-      font-size: 0.99em;
-      margin-bottom: 5px;
-      margin-top: 2px;
-      opacity: 0.93;
-      letter-spacing: 0.1px;
-    }
-  </style>
 </head>
 <body>
   <div id="startMsg" style="display:none;"></div>
-
   <div class="header">
     <h1>Looper Pedal Board</h1>
     <span id="bpmLabel">BPM: --</span>
   </div>
-
   <div class="pedal-board">
+    <!-- Looper 1: Master -->
     <div class="looper-pedal" id="looper1">
       <div class="track-label">MASTER</div>
       <svg class="progress-ring" width="92" height="92">
         <circle id="progressBar1" r="42" cx="46" cy="46" stroke-width="6" fill="none" />
       </svg>
       <div class="looper-icon" id="looperIcon1">▶</div>
-      <div class="state-display" id="stateDisplay1">Ready</div>
+      <div class="looper-row">
+        <div class="state-display" id="stateDisplay1">Ready</div>
+      </div>
+      <label class="looper-vol-label">
+        <span>Vol:</span>
+        <input type="range" class="looper-vol-slider" id="volSlider1" min="0" max="120" value="90" />
+        <span id="volValue1">90%</span>
+      </label>
       <button class="main-looper-btn" id="mainLooperBtn1">Record/Overdub</button>
       <button class="stop-btn" id="stopBtn1">Stop/Clear</button>
     </div>
-
+    <!-- Looper 2 -->
     <div class="looper-pedal" id="looper2">
       <div class="track-label">TRACK 2</div>
       <svg class="progress-ring" width="92" height="92">
         <circle id="progressBar2" r="42" cx="46" cy="46" stroke-width="6" fill="none" />
       </svg>
       <div class="looper-icon" id="looperIcon2">▶</div>
-      <div class="state-display" id="stateDisplay2">Ready</div>
-      <label style="margin-top:10px;">Divide:
+      <div class="looper-row">
+        <div class="state-display" id="stateDisplay2">Ready</div>
+      </div>
+      <label class="looper-vol-label">
+        <span>Vol:</span>
+        <input type="range" class="looper-vol-slider" id="volSlider2" min="0" max="120" value="90" />
+        <span id="volValue2">90%</span>
+      </label>
+      <label>Divide:
         <select id="divider2">
           <option value="1">x1</option>
           <option value="0.5">x½</option>
@@ -78,15 +56,22 @@
       <button class="main-looper-btn" id="mainLooperBtn2">Record/Overdub</button>
       <button class="stop-btn" id="stopBtn2">Stop/Clear</button>
     </div>
-
+    <!-- Looper 3 -->
     <div class="looper-pedal" id="looper3">
       <div class="track-label">TRACK 3</div>
       <svg class="progress-ring" width="92" height="92">
         <circle id="progressBar3" r="42" cx="46" cy="46" stroke-width="6" fill="none" />
       </svg>
       <div class="looper-icon" id="looperIcon3">▶</div>
-      <div class="state-display" id="stateDisplay3">Ready</div>
-      <label style="margin-top:10px;">Divide:
+      <div class="looper-row">
+        <div class="state-display" id="stateDisplay3">Ready</div>
+      </div>
+      <label class="looper-vol-label">
+        <span>Vol:</span>
+        <input type="range" class="looper-vol-slider" id="volSlider3" min="0" max="120" value="90" />
+        <span id="volValue3">90%</span>
+      </label>
+      <label>Divide:
         <select id="divider3">
           <option value="1">x1</option>
           <option value="0.5">x½</option>
@@ -96,15 +81,22 @@
       <button class="main-looper-btn" id="mainLooperBtn3">Record/Overdub</button>
       <button class="stop-btn" id="stopBtn3">Stop/Clear</button>
     </div>
-
+    <!-- Looper 4: Black/Dark, NOT GOLD -->
     <div class="looper-pedal" id="looper4">
       <div class="track-label">TRACK 4</div>
       <svg class="progress-ring" width="92" height="92">
         <circle id="progressBar4" r="42" cx="46" cy="46" stroke-width="6" fill="none" />
       </svg>
       <div class="looper-icon" id="looperIcon4">▶</div>
-      <div class="state-display" id="stateDisplay4">Ready</div>
-      <label style="margin-top:10px;">Divide:
+      <div class="looper-row">
+        <div class="state-display" id="stateDisplay4">Ready</div>
+      </div>
+      <label class="looper-vol-label">
+        <span>Vol:</span>
+        <input type="range" class="looper-vol-slider" id="volSlider4" min="0" max="120" value="90" />
+        <span id="volValue4">90%</span>
+      </label>
+      <label>Divide:
         <select id="divider4">
           <option value="1">x1</option>
           <option value="0.5">x½</option>
@@ -116,6 +108,7 @@
     </div>
   </div>
 
+  <!-- Reverb and Delay Section -->
   <div class="fx-section">
     <div class="fx-pedal reverb-pedal">
       <div class="fx-label">REVERB</div>
@@ -126,12 +119,6 @@
         <span id="reverbValue">0%</span>
       </div>
     </div>
-
-    <!-- Live MIC Monitor Toggle Button -->
-    <div class="monitor-toggle">
-      <button id="monitorBtn" class="monitor-btn">Live MIC OFF</button>
-    </div>
-
     <div class="fx-pedal delay-pedal">
       <div class="fx-label">DELAY</div>
       <div class="knob-container">
@@ -143,16 +130,17 @@
     </div>
   </div>
 
-  <!-- Browser Fallback Button -->
-  <div class="info-browser">
-    If your mobile app can't access mic or sound, open the full app in your browser:
-  </div>
-  <div class="launch-browser">
-    <a href="https://surajpathare1111.github.io/looper-app/" target="_blank">
-      🌐 Open Full Looper App in Browser (GitHub)
-    </a>
-  </div>
+  <!-- LIVE FX (MIC MONITOR) BUTTON -->
+  <button id="monitorBtn" class="monitor-btn">Live MIC OFF</button>
 
+  <!-- Footer: Open App and Source links -->
+  <footer style="text-align:center; margin: 22px 0 8px 0;">
+    <a href="https://surajpathare1111.github.io/looper-app/" target="_blank" class="open-link-btn">
+      🔗 Open Looper App (Mobile)
+    </a>
+    <br>
+    <a href="https://github.com/surajpathare1432/looper-app" target="_blank" class="footer-link">View Source on GitHub</a>
+  </footer>
   <script src="script.js"></script>
 </body>
 </html>

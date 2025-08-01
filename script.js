@@ -1,4 +1,4 @@
-// Looper Pedal Board – LIVE MIC MONITOR FX BUTTON (2025-08-01)
+// Looper Pedal Board – Robust Looper Volumes, 120%, Strict (2025-08-01)
 
 let audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
 let micStream = null, micSource = null;
@@ -6,7 +6,7 @@ let dryGain = null, wetGain = null, convolver = null, delayNode = null, delayGai
 let mixDest = null, processedStream = null;
 let reverbLevel = 0, delayTime = 0;
 let masterLoopDuration = null, masterBPM = null, masterIsSet = false;
-let liveMicMonitorGain = null, liveMicMonitoring = false; // for the button!
+let liveMicMonitorGain = null, liveMicMonitoring = false;
 
 const dividerSelectors = [
   null, null,
@@ -135,7 +135,7 @@ function addKnobDragHandler(el,getVal,setVal,disp,ind,min=0,max=100,scale=2.7,un
   if(!el) return; el.addEventListener('mousedown',down); el.addEventListener('touchstart',down,{passive:false});
 }
 
-// PHASE-LOCKED LOOPER CLASS -- [Unchanged except for playback]
+// === PHASE-LOCKED LOOPER CLASS – Now with robust stop/clear logic and per-looper volume!
 class Looper {
   constructor(index, recordKey, stopKey) {
     this.index = index;
@@ -157,6 +157,23 @@ class Looper {
     this.holdTimer = null;
     this.divider = 1;
     this.uiDisabled = false;
+
+    // --- Per-looper volume (0–120%) ---
+    this.gainNode = audioCtx.createGain();
+    const volSlider = document.getElementById('volSlider'+index);
+    const volValue = document.getElementById('volValue'+index);
+    // Set initial value to 90%
+    this.gainNode.gain.value = 0.9;
+    if (volSlider && volValue) {
+      volSlider.value = 90;
+      volValue.textContent = '90%';
+      volSlider.addEventListener('input', e => {
+        const val = parseInt(volSlider.value, 10);
+        this.gainNode.gain.value = val / 100;
+        volValue.textContent = val + '%';
+      });
+    }
+
     this.updateUI();
     this.setRingProgress(0);
     if(index>=2 && dividerSelectors[index]){
@@ -164,8 +181,33 @@ class Looper {
       dividerSelectors[index].addEventListener('change',e=>{ this.divider = parseFloat(e.target.value); });
       this.setDisabled(true);
     }
+
+    // --- Robust STOP/CLEAR handler ---
+    addHoldHandler(this.stopBtn,
+      () => {
+        if (this.state === 'ready') return;
+        this.holdTimer = setTimeout(() => {
+          this.clearLoop(); this.holdTimer = null;
+        }, 2000);
+      },
+      () => {
+        if (this.holdTimer) {
+          clearTimeout(this.holdTimer);
+          this.holdTimer = null;
+          // Short press logic:
+          if (this.state === 'playing' || this.state === 'overdub') {
+            this.stopPlayback();
+          } else if (this.state === 'stopped') {
+            this.resumePlayback();
+          } else if (this.state === 'recording') {
+            this.abortRecording();
+          }
+        }
+      }
+    );
+
+    // Main looper button tap handler (same as before)
     addTapHandler(this.mainBtn, async()=>{ await ensureMic(); await this.handleMainButton(); });
-    addHoldHandler(this.stopBtn, ()=>{ if(this.state==='ready') return; this.holdTimer = setTimeout(()=>{ this.clearLoop(); this.holdTimer=null; },2000); }, ()=>{ if(this.holdTimer){ clearTimeout(this.holdTimer); this.holdTimer=null; if(this.state==='playing'||this.state==='overdub'){ this.stopPlayback(); } else if(this.state==='stopped'){ this.resumePlayback(); } } });
   }
   setLED(color){ const map={green:'#22c55e',red:'#e11d48',orange:'#f59e0b',gray:'#6b7280'}; this.ledRing.style.stroke = map[color]||'#fff'; this.ledRing.style.filter=(color==='gray'?'none':'drop-shadow(0 0 8px '+(map[color]+'88')+')'); }
   setRingProgress(r){ const R=42,C=2*Math.PI*R; this.ledRing.style.strokeDasharray=C; this.ledRing.style.strokeDashoffset=C*(1-r); }
@@ -175,18 +217,41 @@ class Looper {
   setDisabled(v){ this.uiDisabled=v; this.updateUI(); }
   async handleMainButton(){ if(this.state==='ready'){ await this.phaseLockedRecording(); } else if(this.state==='recording'){ await this.stopRecordingAndPlay(); } else if(this.state==='playing'){ this.armOverdub(); } else if(this.state==='overdub'){ this.finishOverdub(); } }
   async phaseLockedRecording(){ if(!processedStream) await ensureMic(); if(this.index===1||!masterIsSet){ await this.startRecording(); return; } this.state='waiting'; this.updateUI(); this.setDisplay('Waiting for sync...'); const now=audioCtx.currentTime; const master=loopers[1]; const elapsed=(now-master.loopStartTime)%masterLoopDuration; const toNext=masterLoopDuration-elapsed; setTimeout(()=>{ this._startPhaseLockedRecording(masterLoopDuration*this.divider); }, toNext*1000); }
-  async _startPhaseLockedRecording(len){ this.state='recording'; this.updateUI(); this.chunks=[]; this.mediaRecorder=new MediaRecorder(processedStream); this.mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) this.chunks.push(e.data); }; this.mediaRecorder.start(); const start=Date.now(), self=this; (function recAnim(){ if(self.state==='recording'){ let pct=(Date.now()-start)/(len*1000); self.setRingProgress(Math.min(pct,1)); if(pct<1) requestAnimationFrame(recAnim); if(pct>=1) self.stopRecordingAndPlay(); } })(); setTimeout(()=>{ if(this.state==='recording') this.stopRecordingAndPlay(); }, len*1000); }
-  async startRecording(){ if(!processedStream) await ensureMic(); if(this.index>=2&&!masterIsSet) return; this.state='recording'; this.updateUI(); this.chunks=[]; this.mediaRecorder=new MediaRecorder(processedStream); this.mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) this.chunks.push(e.data); }; this.mediaRecorder.start(); const start=Date.now(), self=this; let max=12000; if(this.index>=2&&masterLoopDuration) max=masterLoopDuration*this.divider*1000; (function recAnim(){ if(self.state==='recording'){ let pct=(Date.now()-start)/max; self.setRingProgress(Math.min(pct,1)); if(pct<1) requestAnimationFrame(recAnim); if(pct>=1) self.stopRecordingAndPlay(); } })(); }
+  async _startPhaseLockedRecording(len){ this.state='recording'; this.updateUI(); this.chunks=[]; this.mediaRecorder=new MediaRecorder(processedStream); this.mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) this.chunks.push(e.data); }; this.mediaRecorder.start(); const start=Date.now(), self=this; (function recAnim(){ if(self.state==='recording'){ let pct=(Date.now()-start)/(len*1000); self.setRingProgress(Math.min(pct,1)); if(pct<1) requestAnimationFrame(recAnim); if(pct>=1) self.stopRecordingAndPlay(); } })(); setTimeout(()=>{ if(this.state==='recording') self.stopRecordingAndPlay(); }, len*1000); }
+  async startRecording(){
+    if(!processedStream) await ensureMic();
+    if(this.index>=2&&!masterIsSet) return;
+    this.state='recording'; this.updateUI(); this.chunks=[];
+    this.mediaRecorder=new MediaRecorder(processedStream);
+    this.mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) this.chunks.push(e.data); };
+    this.mediaRecorder.start();
+    const start=Date.now(), self=this;
+    let max = (this.index === 1) ? 60000 : (masterLoopDuration ? masterLoopDuration*this.divider*1000 : 12000); // MASTER capped at 1 min
+    (function recAnim(){ if(self.state==='recording'){ let pct=(Date.now()-start)/max; self.setRingProgress(Math.min(pct,1)); if(pct<1) requestAnimationFrame(recAnim); if(pct>=1) self.stopRecordingAndPlay(); } })();
+  }
   async stopRecordingAndPlay(){ if(!this.mediaRecorder) return; this.state='playing'; this.updateUI(); this.mediaRecorder.onstop=async()=>{ const blob=new Blob(this.chunks,{type:'audio/webm'}); const buf=await blob.arrayBuffer(); audioCtx.decodeAudioData(buf,buffer=>{ this.loopBuffer=buffer; this.loopDuration=buffer.duration; if(this.index===1){ masterLoopDuration=this.loopDuration; masterBPM=Math.round(60/this.loopDuration*4); masterIsSet=true; bpmLabel.textContent=`BPM: ${masterBPM}`; for(let k=2;k<=4;k++) loopers[k].setDisabled(false); } this.startPlayback(true); }); }; this.mediaRecorder.stop(); }
-  startPlayback(reset){
+  abortRecording() {
+    if (this.mediaRecorder && this.state === 'recording') {
+      try { this.mediaRecorder.ondataavailable = null; this.mediaRecorder.stop(); } catch (e) {}
+      this.mediaRecorder = null;
+      this.chunks = [];
+      this.state = 'ready';
+      this.loopBuffer = null;
+      this.loopDuration = 0;
+      this.setRingProgress(0);
+      this.updateUI();
+    }
+  }
+  // === Robust Phase-Locked Playback ===
+  startPlayback(reset) {
     if(!this.loopBuffer) return;
-    if(this.sourceNode) try{ this.sourceNode.stop(); }catch{}
+    if(this.sourceNode) { try{ this.sourceNode.stop(); }catch{} this.sourceNode.disconnect(); }
     this.sourceNode = audioCtx.createBufferSource();
     this.sourceNode.buffer = this.loopBuffer;
     this.sourceNode.loop = true;
-    // Loops always go direct to main output (not affected by button)
-    this.sourceNode.connect(audioCtx.destination);
-    // --- Phase-locked sync for slave tracks ---
+    // Output: BufferSource → GainNode → Destination
+    this.sourceNode.connect(this.gainNode);
+    this.gainNode.connect(audioCtx.destination);
     let off = 0;
     if (
       this.index !== 1 &&
@@ -213,12 +278,27 @@ class Looper {
     this.updateUI();
     this.animateProgress();
   }
-  stopPlayback(){ if(this.sourceNode) try{ this.sourceNode.stop(); }catch{} this.state='stopped'; this.updateUI(); }
-  resumePlayback(){ this.startPlayback(); }
+  resumePlayback() {
+    if (this.index === 1) {
+      this.startPlayback(true);
+      for (let k = 2; k <= 4; ++k) {
+        if (loopers[k].state === 'playing') {
+          loopers[k].startPlayback(true);
+        }
+      }
+    } else {
+      this.startPlayback(true);
+    }
+  }
+  stopPlayback() {
+    if (this.sourceNode) { try { this.sourceNode.stop(); this.sourceNode.disconnect(); } catch (e) {} }
+    this.state = 'stopped';
+    this.updateUI();
+  }
   armOverdub(){ if(this.state!=='playing') return; this.state='overdub'; this.updateUI(); const now=audioCtx.currentTime; const elapsed=(now-this.loopStartTime)%this.loopDuration; setTimeout(()=>{ this.startOverdubRecording(); }, (this.loopDuration-elapsed)*1000); }
   startOverdubRecording(){ this.overdubChunks=[]; this.mediaRecorder=new MediaRecorder(processedStream); this.mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) this.overdubChunks.push(e.data); }; this.mediaRecorder.start(); setTimeout(()=>{ this.finishOverdub(); }, this.loopDuration*1000); }
   finishOverdub(){ if(this.mediaRecorder&&this.mediaRecorder.state==='recording'){ this.mediaRecorder.onstop=async()=>{ const od=new Blob(this.overdubChunks,{type:'audio/webm'}); const arr=await od.arrayBuffer(); audioCtx.decodeAudioData(arr,newBuf=>{ const orig=this.loopBuffer.getChannelData(0); const fresh=newBuf.getChannelData(0); const length=Math.max(orig.length,fresh.length); const out=audioCtx.createBuffer(1,length,this.loopBuffer.sampleRate); const data=out.getChannelData(0); for(let i=0;i<length;i++){ data[i]=(orig[i]||0)+(fresh[i]||0); } this.loopBuffer=out; this.loopDuration=out.duration; this.startPlayback(true); }); }; this.mediaRecorder.stop(); } else { this.state='playing'; this.updateUI(); } }
-  clearLoop(){ if(this.sourceNode) try{ this.sourceNode.stop(); }catch{} this.loopBuffer=null; this.loopDuration=0; this.state='ready'; this.updateUI(); if(this.index===1){ masterLoopDuration=null; masterBPM=null; masterIsSet=false; bpmLabel.textContent='BPM: --'; for(let k=2;k<=4;k++) loopers[k].setDisabled(true); for(let k=2;k<=4;k++) loopers[k].clearLoop(); } }
+  clearLoop(){ if(this.sourceNode) { try{ this.sourceNode.stop(); this.sourceNode.disconnect(); }catch{} } this.loopBuffer=null; this.loopDuration=0; this.state='ready'; this.updateUI(); if(this.index===1){ masterLoopDuration=null; masterBPM=null; masterIsSet=false; bpmLabel.textContent='BPM: --'; for(let k=2;k<=4;k++) loopers[k].setDisabled(true); for(let k=2;k<=4;k++) loopers[k].clearLoop(); } }
   animateProgress(){ if(this.state==='playing'&&this.loopDuration>0&&this.sourceNode){ const now=audioCtx.currentTime; const pos=(now-this.loopStartTime)%this.loopDuration; this.setRingProgress(pos/this.loopDuration); requestAnimationFrame(this.animateProgress.bind(this)); } else this.setRingProgress(0); }
 }
 
@@ -234,6 +314,7 @@ document.addEventListener('keydown', e => {
     if(key===keyMap[idx-1].stop) {
       if(lp.state==='playing'||lp.state==='overdub') lp.stopPlayback();
       else if(lp.state==='stopped') lp.resumePlayback();
+      else if(lp.state==='recording') lp.abortRecording();
       e.preventDefault();
     }
   });
